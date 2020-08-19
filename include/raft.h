@@ -10,6 +10,10 @@
 #ifndef RAFT_H_
 #define RAFT_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "raft_types.h"
 
 typedef enum {
@@ -953,5 +957,9 @@ void raft_node_set_addition_committed(raft_node_t* me_, int committed);
  * @param[in] raft The Raft server
  * @return 1 if a voting change is in progress */
 int raft_voting_change_is_in_progress(raft_server_t* me_);
+
+#ifdef __cplusplus
+} // End extern "C"
+#endif
 
 #endif /* RAFT_H_ */
