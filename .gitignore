@@ -3,3 +3,6 @@
 *~
 libcraft.so
 libcraft.a
+libraft.a
+libraft.so
+
