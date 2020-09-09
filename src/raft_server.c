@@ -19,6 +19,9 @@
 #include "raft.h"
 #include "raft_log.h"
 #include "raft_private.h"
+#include "../../../../tests/lnic.h"
+#include "../../../../tests/lnic-scheduler.h"
+
 
 #ifndef min
 #define min(a, b) ((a) < (b) ? (a) : (b))
@@ -278,12 +281,12 @@ int raft_recv_appendentries_response(raft_server_t* me_,
 {
     raft_server_private_t* me = (raft_server_private_t*)me_;
 
-    __log(me_, node,
-          "received appendentries response %s ci:%d rci:%d 1stidx:%d",
-          r->success == 1 ? "SUCCESS" : "fail",
-          raft_get_current_idx(me_),
-          r->current_idx,
-          r->first_idx);
+    // __log(me_, node,
+    //       "received appendentries response %s ci:%d rci:%d 1stidx:%d",
+    //       r->success == 1 ? "SUCCESS" : "fail",
+    //       raft_get_current_idx(me_),
+    //       r->current_idx,
+    //       r->first_idx);
 
     if (!node)
         return -1;
@@ -392,14 +395,14 @@ int raft_recv_appendentries(
     raft_server_private_t* me = (raft_server_private_t*)me_;
     int e = 0;
 
-    if (0 < ae->n_entries)
-        __log(me_, node, "recvd appendentries t:%d ci:%d lc:%d pli:%d plt:%d #%d",
-              ae->term,
-              raft_get_current_idx(me_),
-              ae->leader_commit,
-              ae->prev_log_idx,
-              ae->prev_log_term,
-              ae->n_entries);
+    // if (0 < ae->n_entries)
+    //     __log(me_, node, "recvd appendentries t:%d ci:%d lc:%d pli:%d plt:%d #%d",
+    //           ae->term,
+    //           raft_get_current_idx(me_),
+    //           ae->leader_commit,
+    //           ae->prev_log_idx,
+    //           ae->prev_log_term,
+    //           ae->n_entries);
 
     r->success = 0;
 
@@ -417,8 +420,8 @@ int raft_recv_appendentries(
     else if (ae->term < me->current_term)
     {
         /* 1. Reply false if term < currentTerm (§5.1) */
-        __log(me_, node, "AE term %d is less than current term %d",
-              ae->term, me->current_term);
+        // __log(me_, node, "AE term %d is less than current term %d",
+        //       ae->term, me->current_term);
         goto out;
     }
 
@@ -439,7 +442,7 @@ int raft_recv_appendentries(
             if (me->snapshot_last_term != ae->prev_log_term)
             {
                 /* Should never happen; something is seriously wrong! */
-                __log(me_, node, "Snapshot AE prev conflicts with committed entry");
+                // __log(me_, node, "Snapshot AE prev conflicts with committed entry");
                 e = RAFT_ERR_SHUTDOWN;
                 goto out;
             }
@@ -448,18 +451,18 @@ int raft_recv_appendentries(
            whose term matches prevLogTerm (§5.3) */
         else if (!ety)
         {
-            __log(me_, node, "AE no log at prev_idx %d", ae->prev_log_idx);
+            // __log(me_, node, "AE no log at prev_idx %d", ae->prev_log_idx);
             goto out;
         }
         else if (ety->term != ae->prev_log_term)
         {
-            __log(me_, node, "AE term doesn't match prev_term (ie. %d vs %d) ci:%d comi:%d lcomi:%d pli:%d",
-                  ety->term, ae->prev_log_term, raft_get_current_idx(me_),
-                  raft_get_commit_idx(me_), ae->leader_commit, ae->prev_log_idx);
+            // __log(me_, node, "AE term doesn't match prev_term (ie. %d vs %d) ci:%d comi:%d lcomi:%d pli:%d",
+            //       ety->term, ae->prev_log_term, raft_get_current_idx(me_),
+            //       raft_get_commit_idx(me_), ae->leader_commit, ae->prev_log_idx);
             if (ae->prev_log_idx <= raft_get_commit_idx(me_))
             {
                 /* Should never happen; something is seriously wrong! */
-                __log(me_, node, "AE prev conflicts with committed entry");
+                // __log(me_, node, "AE prev conflicts with committed entry");
                 e = RAFT_ERR_SHUTDOWN;
                 goto out;
             }
@@ -486,9 +489,9 @@ int raft_recv_appendentries(
             if (ety_index <= raft_get_commit_idx(me_))
             {
                 /* Should never happen; something is seriously wrong! */
-                __log(me_, node, "AE entry conflicts with committed entry ci:%d comi:%d lcomi:%d pli:%d",
-                      raft_get_current_idx(me_), raft_get_commit_idx(me_),
-                      ae->leader_commit, ae->prev_log_idx);
+                // __log(me_, node, "AE entry conflicts with committed entry ci:%d comi:%d lcomi:%d pli:%d",
+                //       raft_get_current_idx(me_), raft_get_commit_idx(me_),
+                //       ae->leader_commit, ae->prev_log_idx);
                 e = RAFT_ERR_SHUTDOWN;
                 goto out;
             }
@@ -736,9 +739,11 @@ int raft_recv_entry(raft_server_t* me_,
 
     if (!raft_is_leader(me_))
         return RAFT_ERR_NOT_LEADER;
-
-    __log(me_, NULL, "received entry t:%d id: %d idx: %d",
-          me->current_term, ety->id, raft_get_current_idx(me_) + 1);
+    volatile uint64_t start_cycles = csr_read(mcycle);
+    //__log(me_, NULL, "received entry t:%d id: %d idx: %d",
+    //      me->current_term, ety->id, raft_get_current_idx(me_) + 1);
+    volatile uint64_t end_cycles = csr_read(mcycle);
+    //printf("in recv cycles %ld\n", end_cycles - start_cycles);
 
     ety->term = me->current_term;
     int e = raft_append_entry(me_, ety);
@@ -825,8 +830,8 @@ int raft_apply_entry(raft_server_t* me_)
     if (!ety)
         return -1;
 
-    __log(me_, NULL, "applying log: %d, id: %d size: %d",
-          log_idx, ety->id, ety->data.len);
+    //__log(me_, NULL, "applying log: %d, id: %d size: %d",
+    //      log_idx, ety->id, ety->data.len);
 
     me->last_applied_idx++;
     if (me->cb.applylog)
@@ -925,13 +930,13 @@ int raft_send_appendentries(raft_server_t* me_, raft_node_t* node)
         }
     }
 
-    __log(me_, node, "sending appendentries node: ci:%d comi:%d t:%d lc:%d pli:%d plt:%d",
-          raft_get_current_idx(me_),
-          raft_get_commit_idx(me_),
-          ae.term,
-          ae.leader_commit,
-          ae.prev_log_idx,
-          ae.prev_log_term);
+    // __log(me_, node, "sending appendentries node: ci:%d comi:%d t:%d lc:%d pli:%d plt:%d",
+    //       raft_get_current_idx(me_),
+    //       raft_get_commit_idx(me_),
+    //       ae.term,
+    //       ae.leader_commit,
+    //       ae.prev_log_idx,
+    //       ae.prev_log_term);
 
     return me->cb.send_appendentries(me_, me->udata, node, &ae);
 }
