@@ -93,7 +93,7 @@ typedef struct
 } raft_entry_data_t;
 
 /** Entry that is stored in the server's entry log. */
-typedef struct
+typedef struct __attribute__((packed))
 {
     /** the entry's term at the point it was created */
     raft_term_t term;
@@ -159,8 +159,9 @@ typedef struct
  * This message is used to tell nodes if it's safe to apply entries to the FSM.
  * Can be sent without any entries as a keep alive message.
  * This message could force a leader/candidate to become a follower. */
-typedef struct
+typedef struct __attribute__((packed))
 {
+    uint32_t msg_id;
     /** currentTerm, to force other leader/candidate to step down */
     raft_term_t term;
 
@@ -186,8 +187,9 @@ typedef struct
 /** Appendentries response message.
  * Can be sent without any entries as a keep alive message.
  * This message could force a leader/candidate to become a follower. */
-typedef struct
+typedef struct __attribute__((packed))
 {
+    uint32_t msg_id;
     /** currentTerm, to force other leader/candidate to step down */
     raft_term_t term;
 
