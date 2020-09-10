@@ -66,7 +66,7 @@ void raft_randomize_election_timeout(raft_server_t* me_)
 
     /* [election_timeout, 2 * election_timeout) */
     me->election_timeout_rand = me->election_timeout + rand() % me->election_timeout;
-    __log(me_, NULL, "randomize election timeout to %d", me->election_timeout_rand);
+    //__log(me_, NULL, "randomize election timeout to %d", me->election_timeout_rand);
 }
 
 raft_server_t* raft_new(void)
@@ -150,9 +150,9 @@ int raft_election_start(raft_server_t* me_)
 {
     raft_server_private_t* me = (raft_server_private_t*)me_;
 
-    __log(me_, NULL, "election starting: %d %d, term: %d ci: %d",
-          me->election_timeout_rand, me->timeout_elapsed, me->current_term,
-          raft_get_current_idx(me_));
+    // __log(me_, NULL, "election starting: %d %d, term: %d ci: %d",
+    //       me->election_timeout_rand, me->timeout_elapsed, me->current_term,
+    //       raft_get_current_idx(me_));
 
     return raft_become_candidate(me_);
 }
@@ -162,7 +162,7 @@ void raft_become_leader(raft_server_t* me_)
     raft_server_private_t* me = (raft_server_private_t*)me_;
     int i;
 
-    __log(me_, NULL, "becoming leader term:%d", raft_get_current_term(me_));
+    //__log(me_, NULL, "becoming leader term:%d", raft_get_current_term(me_));
 
     raft_set_state(me_, RAFT_STATE_LEADER);
     me->timeout_elapsed = 0;
@@ -184,7 +184,7 @@ int raft_become_candidate(raft_server_t* me_)
     raft_server_private_t* me = (raft_server_private_t*)me_;
     int i;
 
-    __log(me_, NULL, "becoming candidate");
+    //__log(me_, NULL, "becoming candidate");
 
     int e = raft_set_current_term(me_, raft_get_current_term(me_) + 1);
     if (0 != e)
@@ -216,7 +216,7 @@ void raft_become_follower(raft_server_t* me_)
 {
     raft_server_private_t* me = (raft_server_private_t*)me_;
 
-    __log(me_, NULL, "becoming follower");
+    //__log(me_, NULL, "becoming follower");
     raft_set_state(me_, RAFT_STATE_FOLLOWER);
     raft_randomize_election_timeout(me_);
     me->timeout_elapsed = 0;
@@ -638,10 +638,10 @@ int raft_recv_requestvote(raft_server_t* me_,
     }
 
 done:
-    __log(me_, node, "node requested vote: %d replying: %s",
-          node,
-          r->vote_granted == 1 ? "granted" :
-          r->vote_granted == 0 ? "not granted" : "unknown");
+    // __log(me_, node, "node requested vote: %d replying: %s",
+    //       node,
+    //       r->vote_granted == 1 ? "granted" :
+    //       r->vote_granted == 0 ? "not granted" : "unknown");
 
     r->term = raft_get_current_term(me_);
     return e;
@@ -661,9 +661,9 @@ int raft_recv_requestvote_response(raft_server_t* me_,
 {
     raft_server_private_t* me = (raft_server_private_t*)me_;
 
-    __log(me_, node, "node responded to requestvote status: %s",
-          r->vote_granted == 1 ? "granted" :
-          r->vote_granted == 0 ? "not granted" : "unknown");
+    // __log(me_, node, "node responded to requestvote status: %s",
+    //       r->vote_granted == 1 ? "granted" :
+    //       r->vote_granted == 0 ? "not granted" : "unknown");
 
     if (!raft_is_candidate(me_))
     {
@@ -686,11 +686,11 @@ int raft_recv_requestvote_response(raft_server_t* me_,
         return 0;
     }
 
-    __log(me_, node, "node responded to requestvote status:%s ct:%d rt:%d",
-          r->vote_granted == 1 ? "granted" :
-          r->vote_granted == 0 ? "not granted" : "unknown",
-          me->current_term,
-          r->term);
+    // __log(me_, node, "node responded to requestvote status:%s ct:%d rt:%d",
+    //       r->vote_granted == 1 ? "granted" :
+    //       r->vote_granted == 0 ? "not granted" : "unknown",
+    //       me->current_term,
+    //       r->term);
 
     switch (r->vote_granted)
     {
@@ -792,7 +792,7 @@ int raft_send_requestvote(raft_server_t* me_, raft_node_t* node)
     assert(node);
     assert(node != me->node);
 
-    __log(me_, node, "sending requestvote to: %d", node);
+    //__log(me_, node, "sending requestvote to: %d", node);
 
     rv.term = me->current_term;
     rv.last_log_idx = raft_get_current_idx(me_);
@@ -1286,11 +1286,11 @@ int raft_begin_snapshot(raft_server_t *me_, int flags)
     me->snapshot_in_progress = 1;
     me->snapshot_flags = flags;
 
-    __log(me_, NULL,
-        "begin snapshot sli:%d slt:%d slogs:%d\n",
-        me->snapshot_last_idx,
-        me->snapshot_last_term,
-        raft_get_num_snapshottable_logs(me_));
+    // __log(me_, NULL,
+    //     "begin snapshot sli:%d slt:%d slogs:%d\n",
+    //     me->snapshot_last_idx,
+    //     me->snapshot_last_term,
+    //     raft_get_num_snapshottable_logs(me_));
 
     return 0;
 }
@@ -1332,11 +1332,11 @@ int raft_end_snapshot(raft_server_t *me_)
 
     me->snapshot_in_progress = 0;
 
-    __log(me_, NULL,
-        "end snapshot base:%d commit-index:%d current-index:%d\n",
-        log_get_base(me->log),
-        raft_get_commit_idx(me_),
-        raft_get_current_idx(me_));
+    // __log(me_, NULL,
+    //     "end snapshot base:%d commit-index:%d current-index:%d\n",
+    //     log_get_base(me->log),
+    //     raft_get_commit_idx(me_),
+    //     raft_get_current_idx(me_));
 
     if (!raft_is_leader(me_))
         return 0;
@@ -1412,11 +1412,11 @@ int raft_begin_load_snapshot(
     me->nodes[0] = me->nodes[my_node_by_idx];
     me->num_nodes = 1;
 
-    __log(me_, NULL,
-        "loaded snapshot sli:%d slt:%d slogs:%d\n",
-        me->snapshot_last_idx,
-        me->snapshot_last_term,
-        raft_get_num_snapshottable_logs(me_));
+    // __log(me_, NULL,
+    //     "loaded snapshot sli:%d slt:%d slogs:%d\n",
+    //     me->snapshot_last_idx,
+    //     me->snapshot_last_term,
+    //     raft_get_num_snapshottable_logs(me_));
 
     return 0;
 }
