@@ -31,6 +31,9 @@
 #define max(a, b) ((a) < (b) ? (b) : (a))
 #endif
 
+uint64_t global_raft_data_export;
+
+
 void *(*__raft_malloc)(size_t) = malloc;
 void *(*__raft_calloc)(size_t, size_t) = calloc;
 void *(*__raft_realloc)(void *, size_t) = realloc;
@@ -746,6 +749,7 @@ int raft_recv_entry(raft_server_t* me_,
     //printf("in recv cycles %ld\n", end_cycles - start_cycles);
 
     ety->term = me->current_term;
+    // global_raft_data_export = csr_read(mcycle); // 369 cycles from the start of the message read to here
     int e = raft_append_entry(me_, ety);
     if (0 != e)
         return e;
@@ -764,8 +768,10 @@ int raft_recv_entry(raft_server_t* me_,
          * Don't send the entry to peers who are behind, to prevent them from
          * becoming congested. */
         raft_index_t next_idx = raft_node_get_next_idx(node);
-        if (next_idx == raft_get_current_idx(me_))
+        if (next_idx == raft_get_current_idx(me_)) {
+            // global_raft_data_export = csr_read(mcycle); // 56K cycles from the start of the message read to here
             raft_send_appendentries(me_, node);
+        }
     }
 
     /* if we're the only node, we can consider the entry committed */

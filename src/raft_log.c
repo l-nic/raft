@@ -17,7 +17,12 @@
 #include "raft_private.h"
 #include "raft_log.h"
 
-#define INITIAL_CAPACITY 10
+#include "../../../../tests/lnic.h"
+#include "../../../../tests/lnic-scheduler.h"
+
+#define INITIAL_CAPACITY 10000
+
+extern uint64_t global_raft_data_export;
 
 typedef struct
 {
@@ -148,6 +153,8 @@ int log_append_entry(log_t* me_, raft_entry_t* ety)
     e = __ensurecapacity(me);
     if (e != 0)
         return e;
+    
+    global_raft_data_export = csr_read(mcycle);
 
     memcpy(&me->entries[me->back], ety, sizeof(raft_entry_t));
 
