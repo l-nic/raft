@@ -20,7 +20,9 @@
 #include "../../../../tests/lnic.h"
 #include "../../../../tests/lnic-scheduler.h"
 
-#define INITIAL_CAPACITY 10000
+#define REQUESTS_PER_LOAD_LEVEL 21000 // Actually 20K, but there's a buffer here to guard against any random issues
+#define NUM_LOAD_LEVELS 100
+#define INITIAL_CAPACITY (REQUESTS_PER_LOAD_LEVEL * NUM_LOAD_LEVELS)
 
 extern uint64_t global_raft_data_export;
 
